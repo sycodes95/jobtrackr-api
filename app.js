@@ -37,15 +37,17 @@ app.use('/users', usersRouter);
 
 passport.use(
   new LocalStrategy({ usernameField: 'email' },(email, password, done) => {
-    pool.query('SELECT * FROM users WHERE email = $1', [email], (error, results) => {
+    pool.query('SELECT * FROM user_info WHERE email = $1', [email], (err, user) => {
+      console.log('user rows', user.rows);
       if (err) { 
         return done(err);
       }
-      if (!user) {
+      if (user.rows.length === 0) {
         return done(null, false, { message: "Incorrect username" });
       }
-      bcrypt.compare(password, user.password, (err, res) => {
+      bcrypt.compare(password, user.rows[0].password, (err, res) => {
         if (res) {
+          
           // passwords match! log user in
           return done(null, user)
         } else {
@@ -59,7 +61,7 @@ passport.use(
 );
 
 passport.serializeUser(function(user, done) {
-  done(null, user.id);
+  done(null, user.rows[0].user_id);
 });
 
 passport.deserializeUser(function(id, done) {

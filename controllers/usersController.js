@@ -94,11 +94,11 @@ exports.log_in_get = (req, res) =>{
 
 exports.log_in_post = (req, res, next) =>{
   passport.authenticate("local", (err, user, info) =>{
-    console.log(user);
+    
     if(err) {
       return next(err)
     }
-    if(!user){
+    if(user.length === 0){
       return res.json('no user')
     }
     req.logIn(user, (err) =>{
