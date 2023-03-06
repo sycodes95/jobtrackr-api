@@ -36,8 +36,8 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
 passport.use(
-  new LocalStrategy((username, password, done) => {
-    users.findOne({ username: username }, (err, user) => {
+  new LocalStrategy({ usernameField: 'email' },(email, password, done) => {
+    pool.query('SELECT * FROM users WHERE email = $1', [email], (error, results) => {
       if (err) { 
         return done(err);
       }
@@ -63,8 +63,11 @@ passport.serializeUser(function(user, done) {
 });
 
 passport.deserializeUser(function(id, done) {
-  users.findById(id, function(err, user) {
-    done(err, user);
+  pool.query('SELECT * FROM users WHERE id = $1', [id], (error, results) => {
+    if (error) {
+      throw error;
+    }
+    done(null, results.rows[0]);
   });
 });
 
