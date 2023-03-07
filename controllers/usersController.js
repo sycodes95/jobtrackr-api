@@ -54,7 +54,7 @@ exports.sign_up_post = [
     console.log(req.body);
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(422).json({ validationError: errors });
+      return res.status(422).json(errors);
     }
     const plainPassword = req.body.password
     console.log(plainPassword);
@@ -64,19 +64,17 @@ exports.sign_up_post = [
       }
       const queryText = `
         INSERT INTO user_info
-        (first_name, last_name, email, password) 
-        VALUES ($1, $2, $3, $4) 
+        ( email, password) 
+        VALUES ($1, $2) 
         RETURNING *`;
       const values = [
-        req.body.first_name,
-        req.body.last_name,
         req.body.email,
         hashedPassword,
       ];
-      pool.query(queryText, values, (err, result) => {
-        console.log(err);
-        if (err) { 
-          return res.json({errors: err});
+      pool.query(queryText, values, (errors, result) => {
+        
+        if (errors) { 
+          return res.json({errors});
         }
         res.json({user: result.rows[0]});
         console.log(result.rows[0]);
