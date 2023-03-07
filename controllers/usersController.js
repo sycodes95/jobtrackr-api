@@ -10,8 +10,6 @@ const { check, body, validationResult } = require("express-validator");
 
 require('dotenv').config()
 
-
-
 exports.verify_token_get = (req,res,next) => {
   const bearerHeader = req.headers['authorization'];
   
@@ -34,8 +32,6 @@ exports.verify_token_get = (req,res,next) => {
   } else {
     return res.status(401).json({error: "Invalid token"});
   }
-
-  
 }
 
 exports.sign_up_post = [
@@ -91,23 +87,23 @@ exports.log_in_get = (req, res) =>{
 }
 
 exports.log_in_post = (req, res, next) =>{
-  passport.authenticate("local", (err, user, info) =>{
+  passport.authenticate("local", (errors, user) =>{
     
-    if(err) {
-      return next(err)
+    if(errors) {
+      
+      return next(errors)
     }
-    if(user.length === 0){
+    if(user.length === 0 || !user){
       return res.json('no user')
     }
-    req.logIn(user, (err) =>{
-      if(err) {
-        return next(err)
+    req.logIn(user, (errors) =>{
+      if(errors) {
+        
+        return next(errors)
       }
       //return res.render('index', {user: user})
       const token = jwt.sign({ user: user}, process.env.JWT_SECRETKEY);
       return res.json({token})
-        
-      
     })
   })(req,res,next)
 }
