@@ -32,7 +32,7 @@ exports.job_app_all_get = (req, res, next) => {
   const user_id = req.query.user_id;
   
   const queryText = `
-    SELECT * FROM job_app WHERE user_id = $1`;
+    SELECT * FROM job_app WHERE user_id = $1 ORDER BY job_app_date DESC`;
     
   pool.query(queryText, [user_id], (errors, results) => {
     console.log('RESULTSSS', results);
