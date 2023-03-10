@@ -1,7 +1,7 @@
 const pool = require('../db')
 
 exports.job_app_post = (req, res, next) => {
-  console.log(req.body);
+  
   const {company_name, company_website, company_favorite, job_app_date, job_app_method,
     job_source_website, job_position, job_fit_rating, job_location, response_date,
     interview_date, offer_amount, rejected, contact_person_name, contact_person_email,
@@ -24,6 +24,22 @@ exports.job_app_post = (req, res, next) => {
       return res.json(errors);
     }
     res.json(results.rows[0]);
+  });
+}
+
+exports.job_app_all_get = (req, res, next) => {
+  console.log('PARAMSSS', req.params);
+  const user_id = req.query.user_id;
+  
+  const queryText = `
+    SELECT * FROM job_app WHERE user_id = $1`;
+    
+  pool.query(queryText, [user_id], (errors, results) => {
+    console.log('RESULTSSS', results);
+    if (errors) {
+      return next(errors);
+    }
+    res.json(results.rows);
   });
 }
 
