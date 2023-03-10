@@ -11,6 +11,7 @@ const { check, body, validationResult } = require("express-validator");
 require('dotenv').config()
 
 exports.verify_token_get = (req,res,next) => {
+  console.log(req);
   const bearerHeader = req.headers['authorization'];
   
   if(typeof bearerHeader !== 'undefined'){
@@ -18,17 +19,17 @@ exports.verify_token_get = (req,res,next) => {
     const bearerToken = bearer[1];
     
     jwt.verify(bearerToken, process.env.JWT_SECRETKEY, (err, user)=>{
-      console.log(err);
+      console.log(user);
       if(err) {
         return res.status(401).json({error: "Invalid token"});
       } else {
+        console.log(user);
         res.json({
           message: 'User authorized',
           user
         })
       }
     })
-    
   } else {
     return res.status(401).json({error: "Invalid token"});
   }
