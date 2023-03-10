@@ -43,3 +43,21 @@ exports.job_app_all_get = (req, res, next) => {
   });
 }
 
+exports.job_app_sort_category_get = (req, res, next) => {
+  console.log(req.query.sortby);
+  const user_id = req.query.user_id ;
+  const column = req.query.column ;
+  const sortby = parseInt(req.query.sortby) === 1 ? 'ASC' : 'DESC';
+  console.log(sortby);
+  const queryText = `
+    SELECT * FROM job_app WHERE user_id = $1 ORDER BY ${column} ${sortby}`;
+
+  pool.query(queryText, [user_id], (errors, results) => {
+    if (errors) {
+      console.log(errors);
+      return res.status(500).json({ error: 'An unexpected error occurred' });
+    }
+    res.json(results.rows);
+  });
+}
+
