@@ -49,6 +49,20 @@ exports.job_app_sort_category_get = (req, res, next) => {
   const column = req.query.column ;
   const sortby = parseInt(req.query.sortby) === 1 ? 'ASC' : 'DESC';
   console.log(sortby);
+
+  const jobAppIds = JSON.parse(req.query.jobAppIds || '[]');
+  const queryText = `
+    SELECT * FROM job_app WHERE user_id = $1 AND job_app_id = ANY($2::int[])
+    ORDER BY ${column} ${sortby}`;
+  
+  pool.query(queryText, [user_id, jobAppIds], (errors, results) => {
+    if (errors) {
+      console.log(errors);
+      return res.status(500).json({ error: 'An unexpected error occurred' });
+    }
+    res.json(results.rows);
+  });
+  /*
   const queryText = `
     SELECT * FROM job_app WHERE user_id = $1 ORDER BY ${column} ${sortby}`;
 
@@ -59,5 +73,6 @@ exports.job_app_sort_category_get = (req, res, next) => {
     }
     res.json(results.rows);
   });
+  */
 }
 
