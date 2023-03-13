@@ -28,14 +28,14 @@ exports.job_app_post = (req, res, next) => {
 }
 
 exports.job_app_all_get = (req, res, next) => {
-  console.log('PARAMSSS', req.params);
+  
   const user_id = req.query.user_id;
   
   const queryText = `
     SELECT * FROM job_app WHERE user_id = $1 ORDER BY job_app_date DESC`;
     
   pool.query(queryText, [user_id], (errors, results) => {
-    console.log('RESULTSSS', results);
+    
     if (errors) {
       return next(errors);
     }
@@ -44,11 +44,11 @@ exports.job_app_all_get = (req, res, next) => {
 }
 
 exports.job_app_sort_category_get = (req, res, next) => {
-  console.log(req.query.sortby);
+  
   const user_id = req.query.user_id ;
   const column = req.query.column ;
   const sortby = parseInt(req.query.sortby) === 1 ? 'ASC' : 'DESC';
-  console.log(sortby);
+  
 
   const jobAppIds = JSON.parse(req.query.jobAppIds || '[]');
   const queryText = `
@@ -57,22 +57,64 @@ exports.job_app_sort_category_get = (req, res, next) => {
   
   pool.query(queryText, [user_id, jobAppIds], (errors, results) => {
     if (errors) {
-      console.log(errors);
+      
       return res.status(500).json({ error: 'An unexpected error occurred' });
     }
     res.json(results.rows);
   });
-  /*
-  const queryText = `
-    SELECT * FROM job_app WHERE user_id = $1 ORDER BY ${column} ${sortby}`;
+  
+}
 
-  pool.query(queryText, [user_id], (errors, results) => {
-    if (errors) {
-      console.log(errors);
-      return res.status(500).json({ error: 'An unexpected error occurred' });
+exports.job_app_filter_get = (req,res,next) =>{
+  const user_id = req.query.user_id;
+  const filters = JSON.parse(req.query.filters);
+  console.log(filters);
+  let whereClause = 'WHERE user_id = $1';
+  let queryParams = [user_id];
+
+  for (const filter of filters) {
+    console.log('BREAK',filter);
+    if(filter.filter === 'APPLICATION STATUS' && filter.column !== null && filter.a !== null) {
+      for(let i = 0; i < filter.column.length; ++i) {
+        whereClause += ` AND ${filter.column[i]} ${filter.a[i]}`;
+      }
     }
-    res.json(results.rows);
+
+    if(filter.filter === 'FAVORITE' && filter.column !== null && filter.a !== null && filter.a !== false) {
+      whereClause += ` AND ${filter.column} = ${filter.a}`;
+    }
+
+    if(filter.column && filter.a && filter.hasOwnProperty('b') && filter.b){
+      whereClause += ` AND ${filter.column} BETWEEN $${queryParams.length + 1} AND $${queryParams.length + 2}`;
+      queryParams.push(filter.a, filter.b);
+    }
+
+    if(filter.column && filter.a && filter.hasOwnProperty('b') && !filter.b) {
+      whereClause += ` AND ${filter.column} >= $${queryParams.length + 1}`;
+      queryParams.push(filter.a);
+    }
+
+    if(filter.column && !filter.a && filter.hasOwnProperty('b') && filter.b) {
+      whereClause += ` AND ${filter.column} <= $${queryParams.length + 1}`;
+      queryParams.push(filter.b);
+    }
+    
+  }
+
+  const query = {
+    text: `SELECT * FROM job_app ${whereClause}`,
+    values: queryParams
+  };
+  
+  pool.query(query.text, query.values, (error, result) => {
+    
+    if (error) {
+      console.error(error);
+      return res.sendStatus(500);
+    }
+    res.json(result.rows);
   });
-  */
+  
+
 }
 
