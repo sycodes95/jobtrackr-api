@@ -80,8 +80,7 @@ exports.job_app_put = (req, res, next) => {
 
   queryValues.push(job_app_id);
   queryValues.push(user_id);
-  console.log(queryText);
-  console.log(queryValues);
+  
   pool.query(queryText, queryValues, (errors, results) => {
     if (errors) {
       return res.json(errors);
@@ -147,6 +146,7 @@ exports.job_app_filter_get = (req, res, next) => {
       filter.a !== null &&
       filter.a !== false
     ) {
+
       whereClause += ` AND ${filter.column} = ${filter.a}`;
     }
 
@@ -181,3 +181,18 @@ exports.job_app_filter_get = (req, res, next) => {
     res.json(result.rows);
   });
 };
+
+exports.job_app_delete = (res, req, next)=> {
+  const job_app_id = req.query.job_app_id;
+  const user_id = req.query.user_id;
+
+  const queryText = `DELETE FROM job_app WHERE job_app_id = $1 AND user_id = $2`
+  pool.query(queryText, [job_app_id, user_id], (err, result) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json('Error deleting row');
+    } else {
+      res.json(result);
+    }
+  });
+}
