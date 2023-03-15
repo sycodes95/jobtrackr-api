@@ -182,7 +182,7 @@ exports.job_app_filter_get = (req, res, next) => {
   });
 };
 
-exports.job_app_delete = (res, req, next)=> {
+exports.job_app_delete = (req, res, next)=> {
   const job_app_id = req.query.job_app_id;
   const user_id = req.query.user_id;
 
