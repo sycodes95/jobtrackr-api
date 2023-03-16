@@ -103,6 +103,35 @@ exports.job_app_all_get = (req, res, next) => {
   });
 };
 
+exports.job_app_search_get = (req, res, next) => {
+  const searchText = req.query.searchText
+  console.log(searchText);
+  const user_id = req.query.user_id
+  const queryText = `
+    SELECT * FROM job_app
+    WHERE (job_app_date::text ILIKE $1
+    OR company_name::text ILIKE $1
+    OR company_website::text ILIKE $1
+    OR job_app_method::text ILIKE $1
+    OR job_source_website::text ILIKE $1
+    OR job_position::text ILIKE $1
+    OR job_fit_rating::text ILIKE $1
+    OR job_location::text ILIKE $1
+    OR response_date::text ILIKE $1
+    OR interview_date::text ILIKE $1
+    OR offer_amount::text ILIKE $1
+    OR rejected::text ILIKE $1)
+    AND user_id = $2
+  `;
+
+  pool.query(queryText, [`%${searchText}%`, user_id], (errors, results) => {
+    if (errors) {
+      return next(errors);
+    }
+    res.json(results.rows);
+  });
+};
+
 exports.job_app_sort_category_get = (req, res, next) => {
   const user_id = req.query.user_id;
   const column = req.query.column;
