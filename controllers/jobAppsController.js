@@ -91,11 +91,14 @@ exports.job_app_put = (req, res, next) => {
 
 exports.job_app_all_get = (req, res, next) => {
   const user_id = req.query.user_id;
-
+  const page = parseInt(req.query.page) || 1; 
+  const pageSize = parseInt(req.query.pageSize) || 4; 
+  const offset = (page - 1) * pageSize;
+  
   const queryText = `
-    SELECT * FROM job_app WHERE user_id = $1 ORDER BY job_app_date DESC`;
+    SELECT * FROM job_app WHERE user_id = $1 ORDER BY job_app_date DESC LIMIT $2 OFFSET $3`;
 
-  pool.query(queryText, [user_id], (errors, results) => {
+  pool.query(queryText, [user_id, pageSize, offset], (errors, results) => {
     if (errors) {
       return next(errors);
     }
