@@ -72,15 +72,17 @@ exports.job_app_put = (req, res, next) => {
     queryArr.push(`${key} = $${queryArr.length + 1}`);
     queryValues.push(value);
   }
- 
+
   const queryText = `
     UPDATE job_app
-    SET ${queryArr.join(',')}
-    WHERE job_app_id = $${queryValues.length + 1} AND user_id = $${queryValues.length + 2}`;
+    SET ${queryArr.join(",")}
+    WHERE job_app_id = $${queryValues.length + 1} AND user_id = $${
+    queryValues.length + 2
+  }`;
 
   queryValues.push(job_app_id);
   queryValues.push(user_id);
-  
+
   pool.query(queryText, queryValues, (errors, results) => {
     if (errors) {
       return res.json(errors);
@@ -91,10 +93,10 @@ exports.job_app_put = (req, res, next) => {
 
 exports.job_app_all_get = (req, res, next) => {
   const user_id = req.query.user_id;
-  const page = parseInt(req.query.page) || 1; 
-  const pageSize = parseInt(req.query.pageSize) || 4; 
+  const page = parseInt(req.query.page) || 1;
+  const pageSize = parseInt(req.query.pageSize) || 4;
   const offset = (page - 1) * pageSize;
-  
+
   const queryText = `
     SELECT * FROM job_app WHERE user_id = $1 ORDER BY job_app_date DESC LIMIT $2 OFFSET $3`;
 
@@ -106,11 +108,28 @@ exports.job_app_all_get = (req, res, next) => {
   });
 };
 
-exports.job_app_search_get = (req, res, next) => {
-  const searchText = req.query.searchText
-  console.log(searchText);
-  const user_id = req.query.user_id
+exports.job_app_all_get_unpaginated = (req, res, next) => {
+  const user_id = req.query.user_id;
+
   const queryText = `
+    SELECT * FROM job_app WHERE user_id = $1 ORDER BY job_app_date DESC`;
+
+  pool.query(queryText, [user_id], (errors, results) => {
+    if (errors) {
+      return next(errors);
+    }
+    res.json(results.rows);
+  });
+};
+
+exports.job_app_search_get = (req, res, next) => {
+  const searchText = req.query.searchText;
+
+  const user_id = req.query.user_id;
+  const column = req.query.column;
+  const sortby = parseInt(req.query.sortby) === 1 ? "ASC" : "DESC";
+  
+  let queryText = `
     SELECT * FROM job_app
     WHERE (job_app_date::text ILIKE $1
     OR company_name::text ILIKE $1
@@ -124,8 +143,12 @@ exports.job_app_search_get = (req, res, next) => {
     OR interview_date::text ILIKE $1
     OR offer_amount::text ILIKE $1
     OR rejected::text ILIKE $1)
-    AND user_id = $2
+    AND user_id = $2 
   `;
+  
+  if (column) {
+    queryText += `ORDER BY ${column} ${sortby}`;
+  }
 
   pool.query(queryText, [`%${searchText}%`, user_id], (errors, results) => {
     if (errors) {
@@ -134,7 +157,7 @@ exports.job_app_search_get = (req, res, next) => {
     res.json(results.rows);
   });
 };
-
+/*
 exports.job_app_sort_category_get = (req, res, next) => {
   const user_id = req.query.user_id;
   const column = req.query.column;
@@ -152,16 +175,36 @@ exports.job_app_sort_category_get = (req, res, next) => {
     res.json(results.rows);
   });
 };
+*/
+
+exports.job_app_sort_category_get = (req, res, next) => {
+  const user_id = req.query.user_id;
+  const column = req.query.column;
+  const sortby = parseInt(req.query.sortby) === 1 ? "ASC" : "DESC";
+
+  const queryText = `
+    SELECT * FROM job_app WHERE user_id = $1 
+    ORDER BY ${column} ${sortby}`;
+
+  pool.query(queryText, [user_id], (errors, results) => {
+    if (errors) {
+      return res.status(500).json({ error: "An unexpected error occurred" });
+    }
+    res.json(results.rows);
+  });
+};
 
 exports.job_app_filter_get = (req, res, next) => {
   const user_id = req.query.user_id;
   const filters = JSON.parse(req.query.filters);
-  console.log(filters);
+  const column = req.query.column;
+  const sortby = parseInt(req.query.sortby) === 1 ? "ASC" : "DESC";
+  console.log(column);
+  console.log(sortby);
   let whereClause = "WHERE user_id = $1";
   let queryParams = [user_id];
 
   for (const filter of filters) {
-    console.log("BREAK", filter);
     if (
       filter.filter === "APPLICATION STATUS" &&
       filter.column !== null &&
@@ -178,7 +221,6 @@ exports.job_app_filter_get = (req, res, next) => {
       filter.a !== null &&
       filter.a !== false
     ) {
-
       whereClause += ` AND ${filter.column} = ${filter.a}`;
     }
 
@@ -201,9 +243,13 @@ exports.job_app_filter_get = (req, res, next) => {
   }
 
   const query = {
-    text: `SELECT * FROM job_app ${whereClause}`,
+    text: `SELECT * FROM job_app ${whereClause} `,
     values: queryParams,
   };
+
+  if (column) {
+    query.text += `ORDER BY ${column} ${sortby}`;
+  }
 
   pool.query(query.text, query.values, (error, result) => {
     if (error) {
@@ -214,17 +260,17 @@ exports.job_app_filter_get = (req, res, next) => {
   });
 };
 
-exports.job_app_delete = (req, res, next)=> {
+exports.job_app_delete = (req, res, next) => {
   const job_app_id = req.query.job_app_id;
   const user_id = req.query.user_id;
 
-  const queryText = `DELETE FROM job_app WHERE job_app_id = $1 AND user_id = $2`
+  const queryText = `DELETE FROM job_app WHERE job_app_id = $1 AND user_id = $2`;
   pool.query(queryText, [job_app_id, user_id], (err, result) => {
     if (err) {
       console.error(err);
-      res.status(500).json('Error deleting row');
+      res.status(500).json("Error deleting row");
     } else {
       res.json(result);
     }
   });
-}
+};
