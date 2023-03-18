@@ -107,7 +107,7 @@ exports.job_app_all_get_unpaginated = (req, res, next) => {
 };
 
 exports.job_app_get = (req, res, next) => {
-
+  
   const user_id = req.query.user_id;
   const search = req.query.search;
   const filters = req.query.filters ? JSON.parse(req.query.filters) : null;
@@ -117,25 +117,47 @@ exports.job_app_get = (req, res, next) => {
   const sortOrder = parseInt(req.query.sortOrder) === 1 ? "ASC" : "DESC";
 
   let queryText = `SELECT * FROM job_app WHERE user_id = $1`;
-  let queryParams = [user_id];
   
+  let countQueryText = `SELECT COUNT(*) FROM job_app WHERE user_id = $1`;
+  
+  let queryParams = [user_id];
+
+  let countQueryParams = [user_id];
+
+  console.log('1111111111');
   if (search) {
     queryText += `
-      AND(job_app_date::text ILIKE $${queryParams.length + 1}
-      OR company_name::text ILIKE $${queryParams.length + 1}
-      OR company_website::text ILIKE $${queryParams.length + 1}
-      OR job_app_method::text ILIKE $${queryParams.length + 1}
-      OR job_source_website::text ILIKE $${queryParams.length + 1}
-      OR job_position::text ILIKE $${queryParams.length + 1}
-      OR job_fit_rating::text ILIKE $${queryParams.length + 1}
-      OR job_location::text ILIKE $${queryParams.length + 1}
-      OR response_date::text ILIKE $${queryParams.length + 1}
-      OR interview_date::text ILIKE $${queryParams.length + 1}
-      OR offer_amount::text ILIKE $${queryParams.length + 1}
-      OR rejected::text ILIKE $${queryParams.length + 1}
-      ) `;
+    AND(job_app_date::text ILIKE $${queryParams.length + 1}
+    OR company_name::text ILIKE $${queryParams.length + 1}
+    OR company_website::text ILIKE $${queryParams.length + 1}
+    OR job_app_method::text ILIKE $${queryParams.length + 1}
+    OR job_source_website::text ILIKE $${queryParams.length + 1}
+    OR job_position::text ILIKE $${queryParams.length + 1}
+    OR job_fit_rating::text ILIKE $${queryParams.length + 1}
+    OR job_location::text ILIKE $${queryParams.length + 1}
+    OR response_date::text ILIKE $${queryParams.length + 1}
+    OR interview_date::text ILIKE $${queryParams.length + 1}
+    OR offer_amount::text ILIKE $${queryParams.length + 1}
+    OR rejected::text ILIKE $${queryParams.length + 1}
+    ) `;
+    countQueryText += `
+    AND(job_app_date::text ILIKE $${queryParams.length + 1}
+    OR company_name::text ILIKE $${queryParams.length + 1}
+    OR company_website::text ILIKE $${queryParams.length + 1}
+    OR job_app_method::text ILIKE $${queryParams.length + 1}
+    OR job_source_website::text ILIKE $${queryParams.length + 1}
+    OR job_position::text ILIKE $${queryParams.length + 1}
+    OR job_fit_rating::text ILIKE $${queryParams.length + 1}
+    OR job_location::text ILIKE $${queryParams.length + 1}
+    OR response_date::text ILIKE $${queryParams.length + 1}
+    OR interview_date::text ILIKE $${queryParams.length + 1}
+    OR offer_amount::text ILIKE $${queryParams.length + 1}
+    OR rejected::text ILIKE $${queryParams.length + 1}
+    ) `;
     queryParams.push(`%${search}%`);
+    countQueryParams.push(`%${search}%`)
   }
+  
   
   if(filters){
     
@@ -143,27 +165,33 @@ exports.job_app_get = (req, res, next) => {
       if (filter.filter === "APPLICATION STATUS" && filter.column !== null && filter.a !== null){
         for (let i = 0; i < filter.column.length; ++i) {
           queryText += ` AND ${filter.column[i]} ${filter.a[i]}`;
+          countQueryText += ` AND ${filter.column[i]} ${filter.a[i]}`
         }
       }
       if (filter.filter === "FAVORITE" && filter.column !== null && filter.a !== null && filter.a !== false) {
         queryText += ` AND ${filter.column} = ${filter.a}`;
+        countQueryText += ` AND ${filter.column} = ${filter.a}`;
       }
   
       if (filter.column && filter.a && filter.hasOwnProperty("b") && filter.b) {
-        queryText += ` AND ${filter.column} BETWEEN $${
-          queryParams.length + 1
-        } AND $${queryParams.length + 2}`;
+        queryText += ` AND ${filter.column} BETWEEN $${queryParams.length + 1} AND $${queryParams.length + 2}`;
+        countQueryText += ` AND ${filter.column} BETWEEN $${queryParams.length + 1} AND $${queryParams.length + 2}`;
         queryParams.push(filter.a, filter.b);
+        countQueryParams.push(filter.a, filter.b)
       }
   
       if (filter.column && filter.a && filter.hasOwnProperty("b") && !filter.b) {
         queryText += ` AND ${filter.column} >= $${queryParams.length + 1}`;
+        countQueryText += ` AND ${filter.column} >= $${queryParams.length + 1}`;
         queryParams.push(filter.a);
+        countQueryParams.push(filter.a)
       }
   
       if (filter.column && !filter.a && filter.hasOwnProperty("b") && filter.b) {
         queryText += ` AND ${filter.column} <= $${queryParams.length + 1}`;
+        countQueryText += ` AND ${filter.column} <= $${queryParams.length + 1}`;
         queryParams.push(filter.b);
+        countQueryParams.push(filter.b)
       }
     }
   }
@@ -179,7 +207,25 @@ exports.job_app_get = (req, res, next) => {
     queryText += ` LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
     queryParams.push(pageSize, offset);
   }
+  console.log('203', countQueryText);
+ 
+  pool.query(countQueryText, countQueryParams, (error, countResult) => {
+    if (error) {
+      console.error(error);
+      return res.sendStatus(500);
+    }
+    const totalCount = parseInt(countResult.rows[0].count);
   
+    pool.query(queryText, queryParams, (error, result) => {
+      if (error) {
+        console.error(error);
+        return res.sendStatus(500);
+      }
+      res.json({ rows: result.rows, totalCount });
+    });
+  });
+  
+  /*
   pool.query(queryText, queryParams, (error, result) => {
     if (error) {
       console.error(error);
@@ -187,6 +233,8 @@ exports.job_app_get = (req, res, next) => {
     }
     res.json(result.rows);
   });
+  */
+  
 };
 
 exports.job_app_delete = (req, res, next) => {
