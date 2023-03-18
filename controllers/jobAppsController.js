@@ -80,8 +80,7 @@ exports.job_app_put = (req, res, next) => {
     queryValues.length + 2
   }`;
 
-  queryValues.push(job_app_id);
-  queryValues.push(user_id);
+  queryValues.push(job_app_id, user_id);
 
   pool.query(queryText, queryValues, (errors, results) => {
     if (errors) {
@@ -91,22 +90,7 @@ exports.job_app_put = (req, res, next) => {
   });
 };
 
-exports.job_app_all_get = (req, res, next) => {
-  const user_id = req.query.user_id;
-  const page = parseInt(req.query.page) || 1;
-  const pageSize = parseInt(req.query.pageSize) || 4;
-  const offset = (page - 1) * pageSize;
 
-  const queryText = `
-    SELECT * FROM job_app WHERE user_id = $1 ORDER BY job_app_date DESC LIMIT $2 OFFSET $3`;
-
-  pool.query(queryText, [user_id, pageSize, offset], (errors, results) => {
-    if (errors) {
-      return next(errors);
-    }
-    res.json(results.rows);
-  });
-};
 
 exports.job_app_all_get_unpaginated = (req, res, next) => {
   const user_id = req.query.user_id;
@@ -115,6 +99,125 @@ exports.job_app_all_get_unpaginated = (req, res, next) => {
     SELECT * FROM job_app WHERE user_id = $1 ORDER BY job_app_date DESC`;
 
   pool.query(queryText, [user_id], (errors, results) => {
+    if (errors) {
+      return next(errors);
+    }
+    res.json(results.rows);
+  });
+};
+
+exports.job_app_get = (req, res, next) => {
+
+  const user_id = req.query.user_id;
+  const search = req.query.search;
+  const filters = req.query.filters ? JSON.parse(req.query.filters) : null;
+  const page = parseInt(req.query.page) || null;
+  const pageSize = parseInt(req.query.pageSize) || null;
+  const sortColumn = req.query.sortColumn;
+  const sortOrder = parseInt(req.query.sortOrder) === 1 ? "ASC" : "DESC";
+
+  let queryText = `SELECT * FROM job_app WHERE user_id = $1`;
+  let queryParams = [user_id];
+  
+  if (search) {
+    queryText += `
+      AND(job_app_date::text ILIKE $${queryParams.length + 1}
+      OR company_name::text ILIKE $${queryParams.length + 1}
+      OR company_website::text ILIKE $${queryParams.length + 1}
+      OR job_app_method::text ILIKE $${queryParams.length + 1}
+      OR job_source_website::text ILIKE $${queryParams.length + 1}
+      OR job_position::text ILIKE $${queryParams.length + 1}
+      OR job_fit_rating::text ILIKE $${queryParams.length + 1}
+      OR job_location::text ILIKE $${queryParams.length + 1}
+      OR response_date::text ILIKE $${queryParams.length + 1}
+      OR interview_date::text ILIKE $${queryParams.length + 1}
+      OR offer_amount::text ILIKE $${queryParams.length + 1}
+      OR rejected::text ILIKE $${queryParams.length + 1}
+      ) `;
+    queryParams.push(`%${search}%`);
+  }
+  
+  if(filters){
+    
+    for (const filter of filters) {
+      if (filter.filter === "APPLICATION STATUS" && filter.column !== null && filter.a !== null){
+        for (let i = 0; i < filter.column.length; ++i) {
+          queryText += ` AND ${filter.column[i]} ${filter.a[i]}`;
+        }
+      }
+      if (filter.filter === "FAVORITE" && filter.column !== null && filter.a !== null && filter.a !== false) {
+        queryText += ` AND ${filter.column} = ${filter.a}`;
+      }
+  
+      if (filter.column && filter.a && filter.hasOwnProperty("b") && filter.b) {
+        queryText += ` AND ${filter.column} BETWEEN $${
+          queryParams.length + 1
+        } AND $${queryParams.length + 2}`;
+        queryParams.push(filter.a, filter.b);
+      }
+  
+      if (filter.column && filter.a && filter.hasOwnProperty("b") && !filter.b) {
+        queryText += ` AND ${filter.column} >= $${queryParams.length + 1}`;
+        queryParams.push(filter.a);
+      }
+  
+      if (filter.column && !filter.a && filter.hasOwnProperty("b") && filter.b) {
+        queryText += ` AND ${filter.column} <= $${queryParams.length + 1}`;
+        queryParams.push(filter.b);
+      }
+    }
+  }
+  
+  if (sortColumn) {
+    queryText += ` ORDER BY ${sortColumn} ${sortOrder}`;
+  } else {
+    queryText += ` ORDER BY job_app_date DESC`;
+    
+  }
+  if (page && pageSize) {
+    const offset = (page - 1) * pageSize;
+    queryText += ` LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
+    queryParams.push(pageSize, offset);
+  }
+  
+  pool.query(queryText, queryParams, (error, result) => {
+    if (error) {
+      console.error(error);
+      return res.sendStatus(500);
+    }
+    res.json(result.rows);
+  });
+};
+
+exports.job_app_delete = (req, res, next) => {
+  const job_app_id = req.query.job_app_id;
+  const user_id = req.query.user_id;
+
+  const queryText = `DELETE FROM job_app WHERE job_app_id = $1 AND user_id = $2`;
+  pool.query(queryText, [job_app_id, user_id], (err, result) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json("Error deleting row");
+    } else {
+      res.json(result);
+    }
+  });
+};
+
+
+/*
+exports.job_app_all_get = (req, res, next) => {
+  const user_id = req.query.user_id;
+  const page = parseInt(req.query.page) || 1;
+  const pageSize = parseInt(req.query.pageSize) || 10;
+  const offset = (page - 1) * pageSize;
+
+  const queryText = `
+    SELECT * FROM job_app WHERE user_id = $1
+    
+    ORDER BY job_app_date DESC LIMIT $2 OFFSET $3`;
+
+  pool.query(queryText, [user_id, pageSize, offset], (errors, results) => {
     if (errors) {
       return next(errors);
     }
@@ -157,7 +260,7 @@ exports.job_app_search_get = (req, res, next) => {
     res.json(results.rows);
   });
 };
-/*
+
 exports.job_app_sort_category_get = (req, res, next) => {
   const user_id = req.query.user_id;
   const column = req.query.column;
@@ -175,7 +278,7 @@ exports.job_app_sort_category_get = (req, res, next) => {
     res.json(results.rows);
   });
 };
-*/
+
 
 exports.job_app_sort_category_get = (req, res, next) => {
   const user_id = req.query.user_id;
@@ -197,12 +300,31 @@ exports.job_app_sort_category_get = (req, res, next) => {
 exports.job_app_filter_get = (req, res, next) => {
   const user_id = req.query.user_id;
   const filters = JSON.parse(req.query.filters);
+  const search = req.query.search
   const column = req.query.column;
   const sortby = parseInt(req.query.sortby) === 1 ? "ASC" : "DESC";
   console.log(column);
   console.log(sortby);
-  let whereClause = "WHERE user_id = $1";
+  let queryText = `SELECT * FROM job_app WHERE user_id = $1 `;
   let queryParams = [user_id];
+
+  if(search){
+    queryText += `
+    AND (job_app_date::text ILIKE $1
+    OR company_name::text ILIKE $2
+    OR company_website::text ILIKE $2
+    OR job_app_method::text ILIKE $2
+    OR job_source_website::text ILIKE $2
+    OR job_position::text ILIKE $2
+    OR job_fit_rating::text ILIKE $2
+    OR job_location::text ILIKE $2
+    OR response_date::text ILIKE $2
+    OR interview_date::text ILIKE $2
+    OR offer_amount::text ILIKE $2
+    OR rejected::text ILIKE $2) `
+
+    queryParams.push(search)
+  } 
 
   for (const filter of filters) {
     if (
@@ -242,16 +364,11 @@ exports.job_app_filter_get = (req, res, next) => {
     }
   }
 
-  const query = {
-    text: `SELECT * FROM job_app ${whereClause} `,
-    values: queryParams,
-  };
-
   if (column) {
-    query.text += `ORDER BY ${column} ${sortby}`;
+    queryText += `ORDER BY ${column} ${sortby}`;
   }
 
-  pool.query(query.text, query.values, (error, result) => {
+  pool.query(queryText, queryParams, (error, result) => {
     if (error) {
       console.error(error);
       return res.sendStatus(500);
@@ -259,18 +376,8 @@ exports.job_app_filter_get = (req, res, next) => {
     res.json(result.rows);
   });
 };
+*/
 
-exports.job_app_delete = (req, res, next) => {
-  const job_app_id = req.query.job_app_id;
-  const user_id = req.query.user_id;
 
-  const queryText = `DELETE FROM job_app WHERE job_app_id = $1 AND user_id = $2`;
-  pool.query(queryText, [job_app_id, user_id], (err, result) => {
-    if (err) {
-      console.error(err);
-      res.status(500).json("Error deleting row");
-    } else {
-      res.json(result);
-    }
-  });
-};
+
+
