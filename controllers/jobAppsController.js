@@ -92,13 +92,28 @@ exports.job_app_put = (req, res, next) => {
 
 
 
-exports.job_app_all_get_unpaginated = (req, res, next) => {
-  const user_id = req.query.user_id;
+exports.job_app_all_get = (req, res, next) => {
+  
+  const user_id = req.query.user_id
+  let date_start = req.query.date_start
+  let date_end = req.query.date_end
 
-  const queryText = `
-    SELECT * FROM job_app WHERE user_id = $1 ORDER BY job_app_date DESC`;
+  let queryText = `SELECT * FROM job_app WHERE user_id = $1`;
+  let queryParams = [user_id]
 
-  pool.query(queryText, [user_id], (errors, results) => {
+  if(date_start && date_end){
+    console.log('test');
+    queryText += ` AND job_app_date BETWEEN $2 AND $3`
+    queryParams.push(date_start, date_end)
+  } else if(date_end) {
+    queryText += ` AND job_app_date <= $2`
+    queryParams.push(date_end)
+  } else if(date_start) {
+    queryText += ` AND job_app_date >= $2`
+    queryParams.push(date_start)
+  }
+  
+  pool.query(queryText, queryParams, (errors, results) => {
     if (errors) {
       return next(errors);
     }
@@ -178,6 +193,7 @@ exports.job_app_get = (req, res, next) => {
         countQueryText += ` AND ${filter.column} BETWEEN $${queryParams.length + 1} AND $${queryParams.length + 2}`;
         queryParams.push(filter.a, filter.b);
         countQueryParams.push(filter.a, filter.b)
+        console.log(filter.a, filter.b);
       }
   
       if (filter.column && filter.a && filter.hasOwnProperty("b") && !filter.b) {
