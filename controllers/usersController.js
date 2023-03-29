@@ -20,7 +20,7 @@ exports.verify_token_get = (req,res,next) => {
     
     jwt.verify(bearerToken, process.env.JWT_SECRETKEY, (err, user)=>{
       
-      if(err) {
+      if(err) { 
         return res.status(401).json({error: "Invalid token"});
       } else {
         
@@ -31,7 +31,7 @@ exports.verify_token_get = (req,res,next) => {
       }
     })
   } else {
-    return res.status(401).json({error: "Invalid token"});
+    return res.status(401).json({error: "Invalid token"}); 
   }
 }
 

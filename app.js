@@ -30,7 +30,7 @@ app.use(session({ secret: "dogs", resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.urlencoded({ extended: false }));
-app.use(cors({credentials: true, origin: ['http://localhost:3000', 'http://localhost:3001']}));
+app.use(cors({credentials: true, origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'https://jobtrackr.up.railway.app/']}));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
@@ -91,6 +91,7 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
-app.listen(5000)
-
-module.exports = app;
+app.listen(5000)   
+ 
+module.exports = app;  
+   

@@ -12,4 +12,4 @@ const pool = new Pool({
   database: env.PGDATABASE
 })
 
-module.exports = pool;
+module.exports = pool;  

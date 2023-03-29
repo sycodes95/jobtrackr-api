@@ -120,8 +120,8 @@ exports.job_app_all_get = (req, res, next) => {
     res.json(results.rows);
   });
 };
-
-exports.job_app_get = (req, res, next) => {
+ 
+exports.job_app_get = (req, res, next) => { 
   
   const user_id = req.query.user_id;
   const search = req.query.search;
