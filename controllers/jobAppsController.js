@@ -1,7 +1,7 @@
 const pool = require("../db");
 
 exports.job_app_post = (req, res, next) => {
-  const {
+  let {
     company_name,
     company_website,
     company_favorite,
@@ -21,6 +21,10 @@ exports.job_app_post = (req, res, next) => {
     notes,
     user_id,
   } = req.body;
+
+  job_app_date = job_app_date || null
+  response_date = response_date || null
+  interview_date = interview_date || null
 
   const queryText = `
     INSERT INTO job_app
@@ -63,22 +67,28 @@ exports.job_app_post = (req, res, next) => {
 };
 
 exports.job_app_put = (req, res, next) => {
-  const { user_id, job_app_id, ...fieldsToUpdate } = req.body;
-
+  let { user_id, job_app_id, ...fieldsToUpdate } = req.body;
+  
   const queryArr = [];
   const queryValues = [];
 
-  for (const [key, value] of Object.entries(fieldsToUpdate)) {
-    queryArr.push(`${key} = $${queryArr.length + 1}`);
-    queryValues.push(value);
+  for (let [key, value] of Object.entries(fieldsToUpdate)) {
+    if (key === 'job_app_date' || key === 'response_date' || key === 'interview_date'){
+      !value ? queryValues.push(null) : queryValues.push(value);
+      queryArr.push(`${key} = $${queryArr.length + 1}`)
+      
+    } else {
+
+      queryArr.push(`${key} = $${queryArr.length + 1}`);
+      queryValues.push(value);
+    }
+    
   }
 
   const queryText = `
     UPDATE job_app
     SET ${queryArr.join(",")}
-    WHERE job_app_id = $${queryValues.length + 1} AND user_id = $${
-    queryValues.length + 2
-  }`;
+    WHERE job_app_id = $${queryValues.length + 1} AND user_id = $${queryValues.length + 2}`;
 
   queryValues.push(job_app_id, user_id);
 

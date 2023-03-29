@@ -31,13 +31,14 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.urlencoded({ extended: false }));
 app.use(cors({credentials: true, origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'https://jobtrackr.up.railway.app']}));
-
+/*
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://jobtrackr.up.railway.app');
+  res.setHeader('Access-Control-Allow-Origin', ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'https://jobtrackr.up.railway.app']);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   next();
 });
+*/
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
