@@ -91,7 +91,11 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
-app.listen(5000)   
+const port = process.env.PORT || 5000;
+
+app.listen(port, () => {
+  console.log(`Server is listening on port ${port}`);
+});
  
 module.exports = app;  
    
