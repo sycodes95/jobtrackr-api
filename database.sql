@@ -1,10 +1,5 @@
 CREATE DATABASE jobtrackr;
 
-
-
-
-
-
 CREATE TABLE job_app(
   job_app_id SERIAL PRIMARY KEY,
   job_app_date DATE, 

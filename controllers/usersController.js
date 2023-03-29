@@ -48,7 +48,6 @@ exports.sign_up_post = [
     }),
     
   (req, res, next) =>{
-    console.log(req.body);
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(422).json(errors);
@@ -74,7 +73,6 @@ exports.sign_up_post = [
           return res.json({errors});
         }
         res.json({user: result.rows[0]});
-        console.log(result.rows[0]);
       });
       
       

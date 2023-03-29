@@ -102,7 +102,6 @@ exports.job_app_all_get = (req, res, next) => {
   let queryParams = [user_id]
 
   if(date_start && date_end){
-    console.log('test');
     queryText += ` AND job_app_date BETWEEN $2 AND $3`
     queryParams.push(date_start, date_end)
   } else if(date_end) {
@@ -139,7 +138,6 @@ exports.job_app_get = (req, res, next) => {
 
   let countQueryParams = [user_id];
 
-  console.log('1111111111');
   if (search) {
     queryText += `
     AND(job_app_date::text ILIKE $${queryParams.length + 1}
@@ -193,7 +191,6 @@ exports.job_app_get = (req, res, next) => {
         countQueryText += ` AND ${filter.column} BETWEEN $${queryParams.length + 1} AND $${queryParams.length + 2}`;
         queryParams.push(filter.a, filter.b);
         countQueryParams.push(filter.a, filter.b)
-        console.log(filter.a, filter.b);
       }
   
       if (filter.column && filter.a && filter.hasOwnProperty("b") && !filter.b) {
@@ -223,7 +220,6 @@ exports.job_app_get = (req, res, next) => {
     queryText += ` LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
     queryParams.push(pageSize, offset);
   }
-  console.log('203', countQueryText);
  
   pool.query(countQueryText, countQueryParams, (error, countResult) => {
     if (error) {
@@ -367,8 +363,6 @@ exports.job_app_filter_get = (req, res, next) => {
   const search = req.query.search
   const column = req.query.column;
   const sortby = parseInt(req.query.sortby) === 1 ? "ASC" : "DESC";
-  console.log(column);
-  console.log(sortby);
   let queryText = `SELECT * FROM job_app WHERE user_id = $1 `;
   let queryParams = [user_id];
 
