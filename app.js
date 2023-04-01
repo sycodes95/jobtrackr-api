@@ -30,7 +30,13 @@ app.use(session({ secret: "dogs", resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.urlencoded({ extended: false }));
-app.use(cors({credentials: true, origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'https://jobtrackr.up.railway.app']}));
+app.use(cors({credentials: true, origin: [
+  'http://localhost:3000', 
+  'http://localhost:3001', 
+  'http://localhost:3002', 
+  'https://jobtrackr.up.railway.app', 
+  'https://jobtrackr.pro', 
+]}));
 /*
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'https://jobtrackr.up.railway.app']);
